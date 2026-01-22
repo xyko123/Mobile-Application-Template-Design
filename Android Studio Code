@@ -1,0 +1,878 @@
+AndroidManifest.xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FunRunMarathon"
+        tools:targetApi="31">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FunRunMarathon">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
+
+MainActivity.kt
+
+package com.example.funrunmarathon
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import java.time.LocalDate
+import java.time.LocalDateTime
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            FunRunMarathonTheme {
+                HomeScreen()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen() {
+    val scrollState = rememberScrollState()
+    var selectedRace by remember { mutableStateOf("10K") }
+    var countdown by remember { mutableStateOf(getCountdown()) }
+
+    LaunchedEffect(key1 = true) {
+        while (true) {
+            delay(1000)
+            countdown = getCountdown()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("🏃", fontSize = 20.sp)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "FunRun",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                actions = {
+                    IconButton(onClick = { /* Notifications */ }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = Color.White
+                        )
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color.White.copy(alpha = 0.95f),
+                tonalElevation = 16.dp
+            ) {
+                val items = listOf("Home", "Route", "Runners", "Profile")
+                val icons = listOf(Icons.Default.Home, Icons.Default.Map, Icons.Default.People, Icons.Default.Person)
+                
+                items.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        selected = index == 0,
+                        onClick = { /* Handle navigation */ },
+                        icon = {
+                            Icon(
+                                imageVector = icons[index],
+                                contentDescription = item,
+                                tint = if (index == 0) Color(0xFFFF6B35) else Color.Gray
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = item,
+                                color = if (index == 0) Color(0xFFFF6B35) else Color.Gray
+                            )
+                        }
+                    )
+                }
+            }
+        },
+        containerColor = Color.Transparent
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFF6B35),
+                            Color(0xFFFF8E53),
+                            Color(0xFFFFB347)
+                        )
+                    )
+                )
+                .padding(paddingValues)
+        ) {
+            // Decorative elements
+            FloatingCircles()
+            
+            Column(
+                modifier = Modifier
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Hero Section
+                HeroSection()
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Event Info Card
+                EventInfoCard()
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Race Categories
+                RaceCategoriesSection(selectedRace) { race ->
+                    selectedRace = race
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Stats Section
+                StatsSection()
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Countdown Timer
+                CountdownSection(countdown)
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Features
+                FeaturesSection()
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Register Button
+                RegisterButton()
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun HeroSection() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Animated running icon
+        val infiniteTransition = rememberInfiniteTransition()
+        val offsetY by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -10f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+        
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(120.dp)
+        ) {
+            // Pulsing ring
+            val pulseScale by infiniteTransition.animateFloat(
+                initialValue = 0.8f,
+                targetValue = 1.4f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing)
+                )
+            )
+            
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.3f))
+                    .scale(pulseScale)
+            )
+            
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .offset(y = offsetY.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .shadow(8.dp, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("🏃‍♂️", fontSize = 48.sp)
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "CITY FUN RUN 2024",
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        
+        Text(
+            text = "Join the movement!",
+            fontSize = 18.sp,
+            color = Color.White.copy(alpha = 0.9f)
+        )
+    }
+}
+
+@Composable
+fun EventInfoCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.95f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            InfoRow(icon = "📅", title = "Event Date", value = "March 15, 2024")
+            Spacer(modifier = Modifier.height(16.dp))
+            InfoRow(icon = "📍", title = "Location", value = "Central Park, NYC")
+            Spacer(modifier = Modifier.height(16.dp))
+            InfoRow(icon = "⏰", title = "Start Time", value = "7:00 AM")
+        }
+    }
+}
+
+@Composable
+fun InfoRow(icon: String, title: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFFF97316), Color(0xFFEF4444))
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(icon, fontSize = 24.sp)
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+            Text(
+                text = value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun RaceCategoriesSection(selectedRace: String, onRaceSelected: (String) -> Unit) {
+    Column {
+        Text(
+            text = "Choose Your Race",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            RaceCategoryButton(
+                distance = "5K",
+                level = "Beginner",
+                icon = "🥉",
+                isSelected = selectedRace == "5K",
+                onClick = { onRaceSelected("5K") }
+            )
+            
+            RaceCategoryButton(
+                distance = "10K",
+                level = "Intermediate",
+                icon = "🥈",
+                isSelected = selectedRace == "10K",
+                onClick = { onRaceSelected("10K") }
+            )
+            
+            RaceCategoryButton(
+                distance = "21K",
+                level = "Advanced",
+                icon = "🥇",
+                isSelected = selectedRace == "21K",
+                onClick = { onRaceSelected("21K") }
+            )
+        }
+    }
+}
+
+@Composable
+fun RaceCategoryButton(
+    distance: String,
+    level: String,
+    icon: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .weight(1f)
+            .aspectRatio(1f),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) 
+                Color.White.copy(alpha = 0.3f) 
+            else 
+                Color.White.copy(alpha = 0.2f)
+        ),
+        border = if (isSelected) BorderStroke(2.dp, Color.White) else null,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(icon, fontSize = 32.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = distance,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = level,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+fun StatsSection() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        StatCard(value = "5,000+", label = "Registered Runners")
+        StatCard(value = "$50K", label = "Prize Pool")
+    }
+}
+
+@Composable
+fun StatCard(value: String, label: String) {
+    Card(
+        modifier = Modifier.weight(1f),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.2f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+@Composable
+fun CountdownSection(countdown: CountdownData) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.95f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "⏱️ Race Starts In",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                CountdownItem(value = countdown.days, label = "Days")
+                CountdownItem(value = countdown.hours, label = "Hours")
+                CountdownItem(value = countdown.minutes, label = "Mins")
+                CountdownItem(value = countdown.seconds, label = "Secs")
+            }
+        }
+    }
+}
+
+@Composable
+fun CountdownItem(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFFF97316), Color(0xFFEF4444))
+                    )
+                )
+                .shadow(4.dp, shape = RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = value,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = Color.Gray
+        )
+    }
+}
+
+@Composable
+fun FeaturesSection() {
+    Column {
+        Text(
+            text = "What's Included",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        val features = listOf(
+            Feature("👕", "Exclusive Event T-Shirt"),
+            Feature("🏅", "Finisher Medal"),
+            Feature("🎁", "Goodie Bag & Refreshments"),
+            Feature("📸", "Free Race Photos")
+        )
+        
+        features.forEach { feature ->
+            FeatureItem(feature = feature)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+fun FeatureItem(feature: Feature) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.2f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(feature.icon, fontSize = 24.sp)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = feature.title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun RegisterButton() {
+    var buttonState by remember { mutableStateOf<ButtonState>(ButtonState.Default) }
+    
+    Button(
+        onClick = {
+            buttonState = ButtonState.Loading
+            // Simulate registration
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 8.dp,
+            pressedElevation = 4.dp
+        )
+    ) {
+        when (buttonState) {
+            ButtonState.Default -> {
+                Text(
+                    text = "🏃 Register Now - \$35",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFF6B35)
+                )
+            }
+            ButtonState.Loading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color(0xFFFF6B35),
+                    strokeWidth = 3.dp
+                )
+            }
+            ButtonState.Success -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Success",
+                        tint = Color.Green
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Registration Complete!")
+                }
+            }
+        }
+    }
+    
+    Text(
+        text = "Limited slots available!",
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        textAlign = TextAlign.Center,
+        fontSize = 14.sp,
+        color = Color.White.copy(alpha = 0.7f)
+    )
+}
+
+@Composable
+fun FloatingCircles() {
+    val infiniteTransition = rememberInfiniteTransition()
+    
+    val float1 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Floating circles
+        Box(
+            modifier = Modifier
+                .offset(x = 250.dp, y = 80.dp)
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.1f))
+                .scale(0.8f + float1 * 0.2f)
+        )
+        
+        Box(
+            modifier = Modifier
+                .offset(x = 40.dp, y = 320.dp)
+                .size(128.dp)
+                .clip(CircleShape)
+                .background(Color.Yellow.copy(alpha = 0.2f))
+        )
+        
+        Box(
+            modifier = Modifier
+                .offset(x = 280.dp, y = 520.dp)
+                .size(96.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFFA500).copy(alpha = 0.2f))
+        )
+    }
+}
+
+// Data classes
+data class CountdownData(
+    val days: String,
+    val hours: String,
+    val minutes: String,
+    val seconds: String
+)
+
+data class Feature(
+    val icon: String,
+    val title: String
+)
+
+sealed class ButtonState {
+    object Default : ButtonState()
+    object Loading : ButtonState()
+    object Success : ButtonState()
+}
+
+fun getCountdown(): CountdownData {
+    val eventDate = LocalDate.of(2024, 3, 15).atTime(7, 0)
+    val now = LocalDateTime.now()
+    val duration = java.time.Duration.between(now, eventDate)
+    
+    return if (duration.isNegative) {
+        CountdownData("00", "00", "00", "00")
+    } else {
+        val days = duration.toDays()
+        val hours = duration.toHours() % 24
+        val minutes = duration.toMinutes() % 60
+        val seconds = duration.seconds % 60
+        
+        CountdownData(
+            days = days.toString().padStart(2, '0'),
+            hours = hours.toString().padStart(2, '0'),
+            minutes = minutes.toString().padStart(2, '0'),
+            seconds = seconds.toString().padStart(2, '0')
+        )
+    }
+}
+
+@Composable
+fun FunRunMarathonTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = LightColorScheme,
+        typography = Typography,
+        content = content
+    )
+}
+
+val LightColorScheme = lightColorScheme(
+    primary = Color(0xFFFF6B35),
+    secondary = Color(0xFFFF8E53),
+    tertiary = Color(0xFFFFB347)
+)
+
+strings.xml
+
+<resources>
+    <string name="app_name">Fun Run Marathon</string>
+    <string name="register_now">Register Now - $35</string>
+    <string name="limited_slots">Limited slots available!</string>
+    <string name="event_name">CITY FUN RUN 2024</string>
+    <string name="event_date">March 15, 2024</string>
+    <string name="event_location">Central Park, NYC</string>
+    <string name="event_time">7:00 AM</string>
+</resources>
+
+
+themes.xml
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Theme for the application -->
+    <style name="Theme.FunRunMarathon" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary_orange</item>
+        <item name="colorPrimaryVariant">@color/primary_dark_orange</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/secondary_orange</item>
+        <item name="colorSecondaryVariant">@color/secondary_dark_orange</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <!-- Status bar color -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        
+        <!-- Window background -->
+        <item name="android:windowBackground">@color/background_gradient_start</item>
+    </style>
+</resources>
+6.Project structure should be:
+app/
+├── src/main/
+│   ├── java/com/example/funrunmarathon/
+│   │   └── MainActivity.kt
+│   ├── res/
+│   │   ├── values/
+│   │   │   ├── colors.xml
+│   │   │   ├── strings.xml
+│   │   │   └── themes.xml
+│   │   └── layout/ (empty - using Compose)
+│   └── AndroidManifest.xml
+├── build.gradle.kts
+└── proguard-rules.pro
+
+7. Build Gradle (app/build.gradle.kts):
+kotlin
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
+android {
+    namespace = "com.example.funrunmarathon"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.funrunmarathon"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    
+    buildFeatures {
+        compose = true
+    }
+    
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.4"
+    }
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    
+    // Compose BOM
+    implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.6")
+}
+
+
+
+
+
+
+
